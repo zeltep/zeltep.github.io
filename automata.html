@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Evan Zelt</title>
+
+  <meta name="author" content="Evan Zelt">
+  <meta name="keywords" content="Evan, Zelt,Wake Forest,Computer,Science">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="stylesheet.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" />
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=INSERT-YOUR-ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'INSERT-YOUR-ID');
+  </script>
+</head>
+
+<body>
+  <h1>Example of Cellular Automata</h1>
+  <center>
+    <canvas width="300" height = "300"></canvas>
+  </center>
+</body>
+<script>
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "";
+
+    let raf;
+
+    let squares = [];
+
+    const width = 30;
+    const height = 30;
+
+    const beings = [ 
+        "green",
+        "brown",
+        "grey"
+    ]
+
+    function getRandomInt(max) {
+        const choice = Math.floor(Math.random() * max);
+        return choice;
+    }
+
+    for (let i = 0; i < width; i++) {
+        for (let j = 0; j < height; j++) {
+            const square = {
+                gridX: j,
+                gridY: i,
+                x: (j*5) + (j*10), 
+                y: (i*5) + (i*10),
+                color: beings[getRandomInt(3)],
+                health: 3,
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x, this.y, 10, 10)
+                },
+            }
+
+            squares.push(square);
+        }    
+    }
+
+    function getNeighbors(i) {
+        const square = squares[i];
+        let neighbors = [];
+
+        if (square.gridX > 0) {
+           neighbors.push(squares[i-1]);
+        }
+
+        if(square.gridX < (width-1)) {
+            neighbors.push(squares[i+1]);
+        }
+
+        if(square.gridY > 0) {
+            neighbors.push(squares[i-width]);
+        }
+
+        if(square.gridY < (height-1)) {
+            neighbors.push(squares[i+width]);
+        }
+
+        return neighbors;
+    }
+
+    function phaseLife() {
+        for (let i = 0; i < squares.length; i++) {
+            
+            const square = squares[i];
+
+            if (square.color == 'green') {
+                square.health--;
+                const neighbors = getNeighbors(i);
+
+                if (square.health <= 0) {
+                    square.color = 'grey';
+                }
+
+                for (const neighbor of neighbors) {
+                    if(neighbor.color == 'brown' && square.color == 'green' && square.health <=3) {
+                        square.health = 5
+                        neighbor.color = 'green';
+                        neighbor.health = 5;
+                    }
+                }
+            }
+
+            if (square.color == 'grey') {
+                const choice = getRandomInt(20);
+                if (choice == 0) {
+                }
+                else if (choice == 1) {
+                    square.color = 'brown';
+                }
+            }
+
+        }
+
+    } 
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const square of squares) {
+            square.draw();
+        }
+        raf = window.requestAnimationFrame(draw);
+    }
+
+    setInterval(phaseLife, 200);
+    window.requestAnimationFrame(draw);
+
+</script>
+</html>
