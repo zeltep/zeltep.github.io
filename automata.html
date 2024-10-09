@@ -43,7 +43,7 @@
     const beings = [ 
         "green",
         "brown",
-        "grey"
+        "lightgrey"
     ]
 
     function getRandomInt(max) {
@@ -53,15 +53,25 @@
 
     for (let i = 0; i < width; i++) {
         for (let j = 0; j < height; j++) {
+            let randomBeing = getRandomInt(6);
+            if (randomBeing > 1) {
+                randomBeing = 2;
+            }
+
             const square = {
                 gridX: j,
                 gridY: i,
                 x: (j*5) + (j*10), 
                 y: (i*5) + (i*10),
-                color: beings[getRandomInt(3)],
+                age: 0,
+                color: beings[randomBeing],
                 health: 3,
                 draw() {
                     ctx.fillStyle = this.color;
+                    if (this.color == 'green') {
+                        const otherColor = Math.max(0, 200 - 50*this.age)
+                        ctx.fillStyle = `rgb(${otherColor} 255 ${otherColor})`
+                    }
                     ctx.fillRect(this.x, this.y, 10, 10)
                 },
             }
@@ -100,22 +110,27 @@
 
             if (square.color == 'green') {
                 square.health--;
+                square.age++;
                 const neighbors = getNeighbors(i);
 
                 if (square.health <= 0) {
-                    square.color = 'grey';
+                    square.color = 'lightgrey';
+                    square.age = 0;
                 }
 
                 for (const neighbor of neighbors) {
                     if(neighbor.color == 'brown' && square.color == 'green' && square.health <=3) {
-                        square.health = 5
                         neighbor.color = 'green';
                         neighbor.health = 5;
+                        neighbor.age = square.age;
+                    
+                        square.health = 5;
+                        square.age = 0;
                     }
                 }
             }
 
-            if (square.color == 'grey') {
+            if (square.color == 'lightgrey') {
                 const choice = getRandomInt(20);
                 if (choice == 0) {
                 }
