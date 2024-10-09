@@ -126,15 +126,20 @@
                     
                         square.health = 5;
                         square.age = 0;
+                        break;
                     }
                 }
             }
 
-            if (square.color == 'lightgrey') {
-                const choice = getRandomInt(20);
-                if (choice == 0) {
+            else if (square.color == 'lightgrey') {
+                const neighbors = getNeighbors(i);
+                let count = 2;
+                for (const neighbor of neighbors) { 
+                    if (neighbor.color == 'lightgrey') {
+                        count--; 
+                    }
                 }
-                else if (choice == 1) {
+                if (count <= 0) {
                     square.color = 'brown';
                 }
             }
