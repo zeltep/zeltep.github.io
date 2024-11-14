@@ -11,128 +11,159 @@
         <canvas id="game"></canvas>
     </body>
     <script>
-        const canvas = document.querySelector("#game");
-        const ctx = canvas.getContext("2d");
+const canvas = document.querySelector("#game");
+const ctx = canvas.getContext("2d");
 
-        let radius = 0.03;
+let radius = 30;
 
-        function drawCircle(x, y, radius, color) {
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, 2 * Math.PI);
-            ctx.fillStyle = color;
-            ctx.fill(); 
+function drawCircle(x, y, radius, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 0.01, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill(); 
+}
+
+let width = window.innerWidth;
+let height = window.innerHeight;
+
+function resizeCanvas() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+
+    canvas.width = width;
+    canvas.height = height;
+}
+
+resizeCanvas();
+addEventListener("resize", resizeCanvas);
+
+let balls = [];
+
+function handleCollision(ball1, ball2) {
+
+    const xDiff = (ball1.posX + ball1.velX) - (ball2.posX + ball2.velX);
+    const yDiff = (ball1.posY + ball1.velY) - (ball2.posY + ball2.velY);
+
+    const distance = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+    const adjustedRadius = radius;
+
+    const unableToCol = ball1.colTimeout != 0 && ball2.colTimeout != 0;
+
+
+    const currDistX = ball1.posX-ball2.posX;
+    const currDistY = ball1.posY-ball2.posY;
+    const currDist = Math.sqrt(Math.pow(currDistX, 2) + Math.pow(currDistY, 2))
+    const unitX = currDistX / currDist;
+    const unitY = currDistY / currDist;
+
+    const overlap = 2*adjustedRadius - currDist;
+
+    if (overlap <= 0 || unableToCol) {
+        return;
+    }
+
+    if (overlap > 0) { 
+        ball1.posX += 0.5*overlap * unitX; 
+        ball1.posY += 0.5*overlap * unitY; 
+
+        ball2.posX -= 0.5*overlap * unitX; 
+        ball2.posY -= 0.5*overlap * unitY; 
+    }
+
+    const momentum1 = Math.sqrt(Math.pow(ball1.velX, 2) + Math.pow(ball1.velY, 2));
+    const momentum2 = Math.sqrt(Math.pow(ball2.velX, 2) + Math.pow(ball2.velY, 2));
+
+    const totMomentum = 0.8*(momentum1 + momentum2);
+
+
+    ball1.velX = 0.5 * totMomentum * unitX; 
+    ball1.velY = 0.5 * totMomentum * unitY; 
+
+    ball2.velX = 0.5 * totMomentum * -unitX; 
+    ball2.velY = 0.5 * totMomentum * -unitY; 
+
+}
+
+function drawScreen() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (const ball of balls) {
+        const pixX = ball.posX * width;
+        const pixY = ball.posY * height;
+        const adjustedRadius = radius;
+
+        drawCircle(ball.posX, ball.posY, adjustedRadius, ball.color);
+    }
+}
+
+function ballPhysicsTick(ball) {
+        if(ball.colTimeout > 0) {
+            ball.colTimeout--;
         }
 
-        let width = window.innerWidth;
-        let height = window.innerHeight;
+        ball.posX += ball.velX;
+        ball.posY += ball.velY;
+        
+        const adjustedRadius = height/width * radius;
 
-        function resizeCanvas() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-
-            canvas.width = width;
-            canvas.height = height;
+        if (ball.velX > 0) {
+            ball.velx -= 0.1;
+        } else { 
+            ball.velx += 0.1;
         }
 
-        resizeCanvas();
-        addEventListener("resize", resizeCanvas);
-
-        let balls = [];
-
-        function handleCollision(ball1, ball2) {
-
-            const xDiff = (ball1.posX + ball1.velX) - (ball2.posX + ball2.velX);
-            const yDiff = (ball1.posY + ball1.velY) - (ball2.posY + ball2.velY);
-
-            const distance = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
-            const adjustedRadius = radius;
-
-            const unableToCol = ball1.colTimeout != 0 && ball2.colTimeout != 0;
-
-            if (distance > adjustedRadius || unableToCol) {
-                return;
-            }
-
-            ball1.velY = -ball1.velY;
-            ball2.velY = -ball2.velY;
-
-            ball1.velX = -ball1.velX;
-            ball2.velX = -ball2.velX;
+        if ((ball.posX - adjustedRadius) <= 0 || (ball.posX + adjustedRadius) >= width) {
+            ball.velX = -ball.velX;
         }
 
-        function drawScreen() {
-            ctx.clearRect(0, 0, width, height);
+        const downWards = ball.velY >= 0;
+        const above = ball.posY-adjustedRadius <= 0;
+        const below = ball.posY+adjustedRadius >= height;
+        const inBounds = !above && !below;
 
-            for (const ball of balls) {
-                const pixX = ball.posX * width;
-                const pixY = ball.posY * height;
-                const adjustedRadius = radius * height;
-
-                drawCircle(pixX, pixY, adjustedRadius, ball.color);
-            }
+        if (!inBounds) {
+            ball.posY = height - adjustedRadius;
+            ball.velY = -ball.velY;
+        } else if (!downWards) {
+            ball.velY += 0.1;
+        } else {
+            ball.velY += 0.08;
         }
 
-        function ballPhysicsTick(ball) {
-                if(ball.colTimeout > 0) {
-                    ball.colTimeout--;
-                }
-
-                ball.posX += ball.velX;
-                ball.posY += ball.velY;
-                
-                const adjustedRadius = height/width * radius;
-
-                if ((ball.posX - adjustedRadius) <= 0 || (ball.posX + adjustedRadius) >= 1) {
-                    ball.velX = -ball.velX;
-                }
-
-                const downWards = ball.velY >= 0;
-                const above = ball.posY-adjustedRadius <= 0;
-                const below = ball.posY+adjustedRadius >= 1;
-                const inBounds = !above && !below;
-
-                if (!inBounds) {
-                    ball.velY = -ball.velY;
-                } else if (!downWards) {
-                    ball.velY += 0.0001;
-                } else {
-                    ball.velY += 0.00008;
-                }
-
-                if (below && Math.abs(ball.velY) < 0.0005) {
-                    ball.velY = 0;
-                    ball.posY = 1 - adjustedRadius;
-                } else if (above) {
-                    ball.posY = 0 + 2*adjustedRadius;
-                }
+        if (below && Math.abs(ball.velY) < 0.05) {
+            ball.velY = 0;
+            ball.posY = height - adjustedRadius;
+        } else if (above) {
+            ball.posY = 0 + adjustedRadius;
         }
+}
 
-        function gameTick() {
-            visited = []
-            for (const ball of balls) {
-                ballPhysicsTick(ball);
-                for (const neighbor of visited) {
-                    handleCollision(ball, neighbor);
-                }
-                     
-                visited.push(ball);
-            }
+function gameTick() {
+    visited = []
+    for (const ball of balls) {
+        for (const neighbor of visited) {
+            handleCollision(ball, neighbor);
         }
+             
+        ballPhysicsTick(ball);
+        visited.push(ball);
+    }
+}
 
-        setInterval(drawScreen, 15);
-        setInterval(gameTick, 5);
+setInterval(drawScreen, 15);
+setInterval(gameTick, 1);
 
-        function getRandomInt(max) {
-          return Math.floor(Math.random() * max);
-        }
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
 
-        canvas.addEventListener("click", function(e) {
-            const posX = (e.offsetX / width);
-            const posY = (e.offsetY / height);
-            const color = `rgb(${getRandomInt(255)}, ${getRandomInt(255)}, ${getRandomInt(255)})`
-            const velY = 0;
-            const velX = (Math.random() * 0.002) - 0.001;
-            balls.push({color:color, posX:posX, posY:posY, velY:velY, velX:velX, colTimeout: 0});
-        });
+canvas.addEventListener("click", function(e) {
+    const posX = (e.offsetX / width);
+    const posY = (e.offsetY / height);
+    const color = `rgb(${getRandomInt(255)}, ${getRandomInt(255)}, ${getRandomInt(255)})`
+    const velY = 0;
+    const velX = (Math.random() * 0.002) - 0.001;
+    balls.push({color:color, posX:e.offsetX, posY:e.offsetY, velY:velY, velX:velX, colTimeout: 0});
+});
     </script>
 </html>
